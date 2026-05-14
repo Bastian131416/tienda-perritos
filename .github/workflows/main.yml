@@ -8,7 +8,6 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-      # En lugar de usar checkout@v4, bajamos el código manualmente
       - name: Descargar Codigo Manualmente
         run: |
           git init
@@ -19,18 +18,21 @@ jobs:
       - name: Preparar Archivos de Bastian
         run: |
           sudo apt-get install -y unzip
-          # Descomprimimos el ZIP gigante
-          unzip "2.2.3 APP tienda-perritos_LOCAL.zip"
-          # Copiamos solo lo que hay en tu carpeta user5 a la raíz de trabajo
-          cp -r user5/* . || true
+          # Descomprimimos el ZIP
+          unzip -o "2.2.3 APP tienda-perritos_LOCAL.zip"
+          
+          # Buscamos dónde quedó la carpeta backend y la movemos al frente
+          BACKEND_PATH=$(find . -name "backend" -type d -not -path "*/.*" | head -n 1)
+          echo "Carpeta backend encontrada en: $BACKEND_PATH"
+          cp -r $BACKEND_PATH/. ./backend_final || mkdir ./backend_final
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push
         run: |
-          # Construimos el backend
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ./backend
+          # Ahora usamos la carpeta que preparamos con un punto (.) al final
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ./backend_final
           docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
   deploy:
