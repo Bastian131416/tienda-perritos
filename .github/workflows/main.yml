@@ -8,37 +8,35 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar Codigo Manualmente
-        run: |
-          git init
-          git remote add origin https://github.com/${{ github.repository }}.git
-          git fetch --depth 1 origin main
-          git checkout main
+      - name: Descargar Codigo
+        uses: actions/checkout@v4
 
       - name: Preparar Archivos
         run: |
           sudo apt-get install -y unzip
-          # Usamos comillas dobles y comodines para que encuentre el zip sí o sí
-          unzip -o "*.zip"
           
-          # Listamos todo para que en el log veamos qué hay (ayuda a depurar)
-          ls -R
+          # Intentamos descomprimir cualquier zip que exista
+          unzip -o "*.zip" || echo "No se encontró ningún archivo ZIP para descomprimir"
           
-          # Buscamos el Dockerfile. Si no hay uno en backend, buscamos cualquiera.
-          # Forzamos la ruta a "." si no encuentra nada para que docker build no falle por falta de argumento
-          DOCKER_PATH=$(find . -name "Dockerfile" -print -quit | xargs dirname)
-          if [ -z "$DOCKER_PATH" ]; then DOCKER_PATH="."; fi
+          # Buscamos el Dockerfile. Si no hay, usamos el directorio actual (.)
+          # Esto evita el error de 'requires 1 argument'
+          DOCKER_DIR=$(find . -name "Dockerfile" -printf '%h\n' -quit)
           
-          echo "Ruta final encontrada: $DOCKER_PATH"
-          echo "FINAL_PATH=$DOCKER_PATH" >> $GITHUB_ENV
+          if [ -z "$DOCKER_DIR" ]; then
+            echo "No se encontro Dockerfile en subcarpetas, usando raiz"
+            DOCKER_DIR="."
+          fi
+          
+          echo "RUTA_FINAL=$DOCKER_DIR" >> $GITHUB_ENV
+          echo "Ruta de construccion configurada en: $DOCKER_DIR"
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push
         run: |
-          # El punto al final de ${{ env.FINAL_PATH }}/. asegura que siempre haya un argumento
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.FINAL_PATH }}/.
+          # Usamos la variable que definimos arriba
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.RUTA_FINAL }}
           docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
   deploy:
