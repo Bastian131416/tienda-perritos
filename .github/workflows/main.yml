@@ -10,25 +10,31 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          # Estas 3 líneas evitan el error 128 en repositorios pesados o compartidos
+          fetch-depth: 1
+          sparse-checkout: |
+            2.2.3 APP tienda-perritos_LOCAL.zip
+            user5
+          sparse-checkout-cone-mode: false
 
       - name: Preparar Archivos de Bastian
         run: |
-          # 1. Descomprimimos el archivo sin borrar el original
+          # Instalamos unzip por si no está (aunque suele estar)
+          sudo apt-get install -y unzip
+          
+          # Descomprimimos solo lo necesario
           unzip "2.2.3 APP tienda-perritos_LOCAL.zip"
           
-          # 2. Listamos para estar seguros (esto saldrá en el log por si falla)
-          ls -R
-          
-          # 3. Entramos a tu carpeta específica para que Docker encuentre el backend
-          # Nota: Usamos la ruta donde está tu código real
-          cp -r user5/* .
+          # Movemos tu contenido a la carpeta de trabajo
+          cp -r user5/* . || true
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push
         run: |
-          # Construimos usando el Dockerfile que ahora sí debería estar visible
+          # Intentamos construir desde la carpeta backend
           docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ./backend
           docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
