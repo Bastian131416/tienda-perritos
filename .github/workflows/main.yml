@@ -1,4 +1,4 @@
-name: Deploy Tienda Bastian
+name: Deploy Tienda Bastian 
 
 on:
   push:
@@ -41,15 +41,9 @@ jobs:
           host: elservidor.redirectme.net
           username: user5
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Aumentamos el tiempo de espera por si el servidor está lento
-          command_timeout: 200m
+          port: 22
           script: |
-            # Forzamos la descarga de la nueva imagen
             docker pull ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
-            
-            # Limpiamos contenedores anteriores del mismo nombre
             docker stop tienda-backend-u05 || true
             docker rm tienda-backend-u05 || true
-            
-            # Ejecutamos el nuevo contenedor
             docker run -d --name tienda-backend-u05 -p 3005:3001 ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
