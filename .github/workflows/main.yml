@@ -8,35 +8,39 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar Codigo
-        uses: actions/checkout@v4
+      - name: Descarga Forzada de Archivos
+        run: |
+          # Configuramos git para que no sea estricto
+          git config --global init.defaultBranch main
+          git init
+          # Reemplaza con la URL de tu repositorio si es necesario, 
+          # pero esta variable suele funcionar siempre:
+          git remote add origin "https://github.com/${{ github.repository }}"
+          
+          # Descargamos solo lo último para que no pese tanto
+          git fetch --depth 1 origin main
+          git checkout main
 
       - name: Preparar Archivos
         run: |
           sudo apt-get install -y unzip
+          # Descomprimimos lo que sea que termine en .zip
+          unzip -o "*.zip" || echo "No hay zip, seguimos adelante"
           
-          # Intentamos descomprimir cualquier zip que exista
-          unzip -o "*.zip" || echo "No se encontró ningún archivo ZIP para descomprimir"
+          # Buscamos el Dockerfile. Si no existe, usamos la raiz.
+          DOCKER_PATH=$(find . -name "Dockerfile" -print -quit | xargs dirname)
+          if [ -z "$DOCKER_PATH" ]; then DOCKER_PATH="."; fi
           
-          # Buscamos el Dockerfile. Si no hay, usamos el directorio actual (.)
-          # Esto evita el error de 'requires 1 argument'
-          DOCKER_DIR=$(find . -name "Dockerfile" -printf '%h\n' -quit)
-          
-          if [ -z "$DOCKER_DIR" ]; then
-            echo "No se encontro Dockerfile en subcarpetas, usando raiz"
-            DOCKER_DIR="."
-          fi
-          
-          echo "RUTA_FINAL=$DOCKER_DIR" >> $GITHUB_ENV
-          echo "Ruta de construccion configurada en: $DOCKER_DIR"
+          echo "Ruta final: $DOCKER_PATH"
+          echo "FINAL_PATH=$DOCKER_PATH" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push
         run: |
-          # Usamos la variable que definimos arriba
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.RUTA_FINAL }}
+          # Construimos la imagen
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.FINAL_PATH }}
           docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
   deploy:
