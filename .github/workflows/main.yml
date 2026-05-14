@@ -8,30 +8,24 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Descarga Forzada de Archivos
+      - name: Descarga Manual con Permisos
         run: |
-          # Configuramos git para que no sea estricto
-          git config --global init.defaultBranch main
           git init
-          # Reemplaza con la URL de tu repositorio si es necesario, 
-          # pero esta variable suele funcionar siempre:
-          git remote add origin "https://github.com/${{ github.repository }}"
-          
-          # Descargamos solo lo último para que no pese tanto
+          # Usamos el token de GitHub para saltar el error 128 de permisos
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           git fetch --depth 1 origin main
           git checkout main
 
       - name: Preparar Archivos
         run: |
           sudo apt-get install -y unzip
-          # Descomprimimos lo que sea que termine en .zip
-          unzip -o "*.zip" || echo "No hay zip, seguimos adelante"
+          # Descomprimimos el ZIP si existe
+          unzip -o "*.zip" || echo "No hay ZIP"
           
-          # Buscamos el Dockerfile. Si no existe, usamos la raiz.
+          # Buscamos el Dockerfile. Si no hay, usamos la raíz (.).
           DOCKER_PATH=$(find . -name "Dockerfile" -print -quit | xargs dirname)
           if [ -z "$DOCKER_PATH" ]; then DOCKER_PATH="."; fi
           
-          echo "Ruta final: $DOCKER_PATH"
           echo "FINAL_PATH=$DOCKER_PATH" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
@@ -39,7 +33,7 @@ jobs:
 
       - name: Build and Push
         run: |
-          # Construimos la imagen
+          # Construimos la imagen con la ruta encontrada
           docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.FINAL_PATH }}
           docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
