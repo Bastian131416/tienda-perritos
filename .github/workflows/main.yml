@@ -18,28 +18,27 @@ jobs:
       - name: Preparar Archivos
         run: |
           sudo apt-get install -y unzip
-          # Descomprimimos el ZIP ignorando errores
-          unzip -o "2.2.3 APP tienda-perritos_LOCAL.zip" || true
+          # Usamos comillas dobles y comodines para que encuentre el zip sí o sí
+          unzip -o "*.zip"
           
-          # Intentamos encontrar el Dockerfile. Donde esté el Dockerfile, ahí es.
-          DOCKERFILE_DIR=$(find . -name "Dockerfile" -exec dirname {} \; | grep "backend" | head -n 1)
+          # Listamos todo para que en el log veamos qué hay (ayuda a depurar)
+          ls -R
           
-          if [ -z "$DOCKERFILE_DIR" ]; then
-            echo "No pillamos carpeta backend, usando la raiz..."
-            DOCKERFILE_DIR="."
-          fi
+          # Buscamos el Dockerfile. Si no hay uno en backend, buscamos cualquiera.
+          # Forzamos la ruta a "." si no encuentra nada para que docker build no falle por falta de argumento
+          DOCKER_PATH=$(find . -name "Dockerfile" -print -quit | xargs dirname)
+          if [ -z "$DOCKER_PATH" ]; then DOCKER_PATH="."; fi
           
-          echo "Construyendo desde: $DOCKERFILE_DIR"
-          # Guardamos la ruta en una variable de entorno de GitHub
-          echo "FINAL_PATH=$DOCKERFILE_DIR" >> $GITHUB_ENV
+          echo "Ruta final encontrada: $DOCKER_PATH"
+          echo "FINAL_PATH=$DOCKER_PATH" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push
         run: |
-          # Usamos la ruta que encontramos antes
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.FINAL_PATH }}
+          # El punto al final de ${{ env.FINAL_PATH }}/. asegura que siempre haya un argumento
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.FINAL_PATH }}/.
           docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
   deploy:
