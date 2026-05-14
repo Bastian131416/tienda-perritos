@@ -24,14 +24,12 @@ jobs:
           echo "FINAL_PATH=$DOCKER_PATH" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
-        # Aquí ya puse tus credenciales directamente
-        run: echo "ElViajeroOscuro" | docker login -u "bastian13" --password-stdin
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push
         run: |
-          # Usamos tu usuario 'bastian13' para la imagen
-          docker build -t bastian13/tienda-backend:latest ${{ env.FINAL_PATH }}
-          docker push bastian13/tienda-backend:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.FINAL_PATH }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
   deploy:
     needs: build-and-push
@@ -42,10 +40,16 @@ jobs:
         with:
           host: elservidor.redirectme.net
           username: user5
-          # OJO: Aquí sí necesitas que el Secret 'SSH_PRIVATE_KEY' esté en Settings
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Aumentamos el tiempo de espera por si el servidor está lento
+          command_timeout: 200m
           script: |
-            docker pull bastian13/tienda-backend:latest
+            # Forzamos la descarga de la nueva imagen
+            docker pull ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
+            
+            # Limpiamos contenedores anteriores del mismo nombre
             docker stop tienda-backend-u05 || true
             docker rm tienda-backend-u05 || true
-            docker run -d --name tienda-backend-u05 -p 3005:3001 bastian13/tienda-backend:latest
+            
+            # Ejecutamos el nuevo contenedor
+            docker run -d --name tienda-backend-u05 -p 3005:3001 ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
