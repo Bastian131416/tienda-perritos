@@ -11,13 +11,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Preparar Archivos de Bastian
+        run: |
+          # 1. Descomprimimos el archivo sin borrar el original
+          unzip "2.2.3 APP tienda-perritos_LOCAL.zip"
+          
+          # 2. Listamos para estar seguros (esto saldrá en el log por si falla)
+          ls -R
+          
+          # 3. Entramos a tu carpeta específica para que Docker encuentre el backend
+          # Nota: Usamos la ruta donde está tu código real
+          cp -r user5/* .
+
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push
         run: |
-          # El punto (.) significa "construye lo que encuentres aquí"
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest .
+          # Construimos usando el Dockerfile que ahora sí debería estar visible
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ./backend
           docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
   deploy:
