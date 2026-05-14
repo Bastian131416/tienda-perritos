@@ -15,24 +15,31 @@ jobs:
           git fetch --depth 1 origin main
           git checkout main
 
-      - name: Preparar Archivos de Bastian
+      - name: Preparar Archivos
         run: |
           sudo apt-get install -y unzip
-          # Descomprimimos el ZIP
-          unzip -o "2.2.3 APP tienda-perritos_LOCAL.zip"
+          # Descomprimimos el ZIP ignorando errores
+          unzip -o "2.2.3 APP tienda-perritos_LOCAL.zip" || true
           
-          # Buscamos dónde quedó la carpeta backend y la movemos al frente
-          BACKEND_PATH=$(find . -name "backend" -type d -not -path "*/.*" | head -n 1)
-          echo "Carpeta backend encontrada en: $BACKEND_PATH"
-          cp -r $BACKEND_PATH/. ./backend_final || mkdir ./backend_final
+          # Intentamos encontrar el Dockerfile. Donde esté el Dockerfile, ahí es.
+          DOCKERFILE_DIR=$(find . -name "Dockerfile" -exec dirname {} \; | grep "backend" | head -n 1)
+          
+          if [ -z "$DOCKERFILE_DIR" ]; then
+            echo "No pillamos carpeta backend, usando la raiz..."
+            DOCKERFILE_DIR="."
+          fi
+          
+          echo "Construyendo desde: $DOCKERFILE_DIR"
+          # Guardamos la ruta en una variable de entorno de GitHub
+          echo "FINAL_PATH=$DOCKERFILE_DIR" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push
         run: |
-          # Ahora usamos la carpeta que preparamos con un punto (.) al final
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ./backend_final
+          # Usamos la ruta que encontramos antes
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.FINAL_PATH }}
           docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
 
   deploy:
