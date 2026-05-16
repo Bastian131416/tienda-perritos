@@ -42,8 +42,10 @@ jobs:
           username: user5
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
+          fingerprint: ""
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
             docker stop tienda-backend-u05 || true
             docker rm tienda-backend-u05 || true
             docker run -d --name tienda-backend-u05 -p 3005:3001 ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
+            
