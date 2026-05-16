@@ -1,0 +1,66 @@
+name: Validar contenedores
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  docker-compose:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Mostrar versiones
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Crear archivo de entorno
+        run: |
+          cat > .env <<'EOF'
+          MYSQL_ROOT_PASSWORD=root
+          MYSQL_DATABASE=tienda
+          MYSQL_USER=tienda
+          MYSQL_PASSWORD=tienda
+          DB_HOST=db
+          DB_PORT=3306
+          DB_NAME=tienda
+          DB_USER=tienda
+          DB_PASSWORD=tienda
+          EOF
+
+      - name: Construir y levantar contenedores
+        run: docker compose up -d --build
+
+      - name: Ver estado de contenedores
+        run: docker compose ps
+
+      - name: Esperar backend
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:3001/ >/dev/null; then
+              echo "Backend listo"
+              exit 0
+            fi
+            echo "Esperando backend..."
+            sleep 3
+          done
+          echo "Timeout esperando al backend"
+          exit 1
+
+      - name: Probar frontend
+        run: curl -fsS http://localhost:8080/ >/dev/null
+
+      - name: Mostrar logs si falla
+        if: failure()
+        run: docker compose logs
+
+      - name: Apagar contenedores
+        if: always()
+        run: docker compose down -v
+        
