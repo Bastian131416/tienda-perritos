@@ -40,9 +40,8 @@ jobs:
         with:
           host: elservidor.redirectme.net
           username: user5
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           port: 22
-          fingerprint: ""
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
             docker stop tienda-backend-u05 || true
