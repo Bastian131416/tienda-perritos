@@ -55,13 +55,12 @@ jobs:
 
       - name: Esperar backend
         run: |
-          echo "Iniciando espera del backend..."
           for i in {1..40}; do
             if curl -fsS http://localhost:3001/ >/dev/null 2>&1 || curl -fsS http://localhost:3005/ >/dev/null 2>&1; then
-              echo "Backend listo y respondiendo correctamente"
+              echo "Backend listo"
               exit 0
             fi
-            echo "Esperando que el backend responda (intento $i de 40)..."
+            echo "Esperando backend..."
             sleep 3
           done
           echo "Timeout esperando al backend"
@@ -69,7 +68,7 @@ jobs:
 
       - name: Probar frontend
         run: |
-          curl -fsS http://localhost:8080/ >/dev/null 2>&1 || curl -fsS http://localhost:3000/ >/dev/null 2>&1 || echo "Frontend verificado"
+          curl -fsS http://localhost:8080/ >/dev/null 2>&1 || curl -fsS http://localhost:3000/ >/dev/null 2>&1 || echo "Frontend listo"
 
       - name: Mostrar logs si falla
         if: failure()
