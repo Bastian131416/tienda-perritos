@@ -15,7 +15,6 @@ jobs:
       - name: Descargar repositorio
         uses: actions/checkout@v4
 
-      # --- NUEVO PASO INTELIGENTE: Descomprime si tu código venía en un ZIP ---
       - name: Preparar y buscar Archivos
         run: |
           sudo apt-get install -y unzip
@@ -31,7 +30,6 @@ jobs:
           docker --version
           docker compose version
 
-      # Ejecutamos la creación del .env dentro de la carpeta real de tu app
       - name: Crear archivo de entorno
         defaults:
           run:
@@ -49,7 +47,6 @@ jobs:
           DB_PASSWORD=tienda
           EOF
 
-      # Le decimos a Docker que trabaje dentro de la carpeta real encontrada
       - name: Construir y levantar contenedores
         defaults:
           run:
