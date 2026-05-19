@@ -1,3 +1,4 @@
+-- Prueba de activacion de pipeline DB Bastian
 CREATE DATABASE IF NOT EXISTS tienda_perritos;
 USE tienda_perritos;
 
