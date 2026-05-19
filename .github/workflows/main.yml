@@ -1,0 +1,50 @@
+name: Deploy Tienda Bastian 
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descarga Directa
+        run: |
+          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -o repo.zip "https://github.com/${{ github.repository }}/archive/refs/heads/main.zip"
+          unzip repo.zip
+          mv *-main/* . || true
+
+      - name: Preparar Archivos
+        run: |
+          sudo apt-get install -y unzip
+          unzip -o "*.zip" || echo "No hay zip extra"
+          DOCKER_PATH=$(find . -name "Dockerfile" -print -quit | xargs dirname)
+          if [ -z "$DOCKER_PATH" ]; then DOCKER_PATH="."; fi
+          echo "FINAL_PATH=$DOCKER_PATH" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and Push
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest ${{ env.FINAL_PATH }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Update Container
+        uses: appleboy/ssh-action@master
+        with:
+          host: elservidor.redirectme.net
+          username: user5
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
+            docker stop tienda-backend-u05 || true
+            docker rm tienda-backend-u05 || true
+            docker run -d --name tienda-backend-u05 -p 3005:3001 ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
+            
