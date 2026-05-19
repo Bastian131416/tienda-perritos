@@ -1,0 +1,22 @@
+name: CI/CD Tienda Frontend
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Simular Docker Build Frontend
+        run: |
+          echo "Iniciando Docker Build para la capa Frontend..."
+          cd frontend
+          echo "Imagen de Frontend construida con exito."
+
+      - name: Simular Despliegue
+        run: echo "Desplegando capa Frontend..."

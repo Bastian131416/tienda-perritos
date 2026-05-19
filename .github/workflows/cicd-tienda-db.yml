@@ -1,1 +1,22 @@
+name: CI/CD Tienda DB
 
+on:
+  push:
+    paths:
+      - 'db/**'
+
+jobs:
+  build-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Simular Docker Build DB
+        run: |
+          echo "Iniciando Docker Build para la capa DB..."
+          cd db
+          echo "Imagen de DB construida con exito."
+
+      - name: Simular Despliegue
+        run: echo "Desplegando Base de Datos..."
