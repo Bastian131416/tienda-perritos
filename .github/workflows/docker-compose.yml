@@ -80,3 +80,4 @@ jobs:
         run: |
           cd ${{ env.REAL_WORKSPACE }}
           docker compose down -v
+# Configuración validada y operativa en el servidor
