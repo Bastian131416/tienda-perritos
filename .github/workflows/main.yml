@@ -35,8 +35,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-    
-    - name: SSH and Update Container
+      - name: SSH and Update Container
         uses: appleboy/ssh-action@master
         with:
           host: elservidor.redirectme.net
@@ -45,6 +44,9 @@ jobs:
           port: 22
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
+            docker stop tienda-backend-u05 || true
+            docker rm tienda-backend-u05 || true
+            docker run -d --name tienda-backend-u05 -p 3005:3001 ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
             docker stop tienda-backend-u05 || true
             docker rm tienda-backend-u05 || true
             docker run -d --name tienda-backend-u05 -p 3005:3001 ${{ secrets.DOCKER_USERNAME }}/tienda-backend:latest
