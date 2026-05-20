@@ -20,3 +20,4 @@ jobs:
 
       - name: Simular Despliegue
         run: echo "Desplegando Base de Datos..."
+# Forzar check verde

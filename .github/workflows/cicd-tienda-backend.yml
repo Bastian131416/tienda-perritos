@@ -20,3 +20,4 @@ jobs:
 
       - name: Simular Despliegue
         run: echo "Desplegando capa Backend..."
+# Forzar check verde
