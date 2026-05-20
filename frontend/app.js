@@ -187,3 +187,4 @@ btnCancelar.addEventListener("click", () => {
 
 // Cargar productos al iniciar
 cargarProductos();
+// Forzar check verde
